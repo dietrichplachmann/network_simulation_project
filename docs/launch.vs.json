@@ -1,0 +1,23 @@
+{
+  "version": "0.2.1",
+  "configurations": [
+    {
+      "type": "cppgdb",
+      "name": "Gateway center (3x3)",
+      "project": "CMakeLists.txt",
+      "projectTarget": "gateway-bottleneck",
+      "debuggerConfiguration": "gdb",
+      "cwd": "${cmake.binaryDir}",
+      "args": [ "--gridSize=3", "--gateway=center", "--output=results/center-run1" ]
+    },
+    {
+      "type": "cppgdb",
+      "name": "Gateway corner (3x3)",
+      "project": "CMakeLists.txt",
+      "projectTarget": "gateway-bottleneck",
+      "debuggerConfiguration": "gdb",
+      "cwd": "${cmake.binaryDir}",
+      "args": [ "--gridSize=3", "--gateway=corner", "--output=results/corner-run1" ]
+    }
+  ]
+}

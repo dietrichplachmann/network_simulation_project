@@ -1,0 +1,9 @@
+.deps/
+build/
+out/
+.vs/
+CMakeUserPresets.json
+results/
+__pycache__/
+*.pcap
+*.pcapng

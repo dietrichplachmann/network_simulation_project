@@ -1,0 +1,55 @@
+{
+  "version": 2,
+  "cmakeMinimumRequired": { "major": 3, "minor": 20, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "wsl-base",
+      "description": "Build with the workspace toolchain when available, otherwise system tools.",
+      "hidden": true,
+      "generator": "Unix Makefiles",
+      "cmakeExecutable": "${sourceDir}/scripts/cmake",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "environment": {
+        "PATH": "${sourceDir}/../.deps/toolchain/bin:${sourceDir}/scripts:$penv{PATH}"
+      },
+      "cacheVariables": { "BUILD_TESTING": "ON" },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ],
+          "intelliSenseMode": "linux-gcc-x64"
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "forceWSL1Toolset": true
+        }
+      }
+    },
+    {
+      "name": "wsl-debug",
+      "displayName": "WSL Debug",
+      "inherits": "wsl-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "wsl-release",
+      "displayName": "WSL Release",
+      "inherits": "wsl-base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "wsl-debug", "configurePreset": "wsl-debug", "jobs": 2 },
+    { "name": "wsl-release", "configurePreset": "wsl-release", "jobs": 2 }
+  ],
+  "testPresets": [
+    {
+      "name": "wsl-debug",
+      "configurePreset": "wsl-debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "wsl-release",
+      "configurePreset": "wsl-release",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

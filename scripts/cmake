@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Let the shared Visual Studio presets use the workspace toolchain when it is
+# present, while using the normal system tools on teammates' Linux machines.
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+tools="$root/../.deps/toolchain"
+if [[ -x "$tools/bin/cmake" && -x "$tools/bin/x86_64-conda-linux-gnu-c++" ]]; then
+    export PATH="$tools/bin:$PATH"
+    export CC="$tools/bin/x86_64-conda-linux-gnu-cc"
+    export CXX="$tools/bin/x86_64-conda-linux-gnu-c++"
+    export CXXFLAGS="${CXXFLAGS:-} -gdwarf-4"
+    export LDFLAGS="${LDFLAGS:-} -Wl,-rpath,$tools/lib"
+    export LD_LIBRARY_PATH="$tools/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    exec "$tools/bin/cmake" "$@"
+fi
+for candidate in /usr/local/bin/cmake /usr/bin/cmake; do
+    if [[ -x "$candidate" ]]; then
+        exec "$candidate" "$@"
+    fi
+done
+echo "CMake is missing. Install the prerequisites described in README.md." >&2
+exit 1

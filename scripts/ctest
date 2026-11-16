@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+tools="$root/../.deps/toolchain"
+if [[ -x "$tools/bin/ctest" ]]; then
+    export PATH="$tools/bin:$PATH"
+    export LD_LIBRARY_PATH="$tools/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    exec "$tools/bin/ctest" "$@"
+fi
+if [[ -x /usr/bin/ctest ]]; then
+    exec /usr/bin/ctest "$@"
+fi
+echo "CTest is missing. Install the CMake package described in README.md." >&2
+exit 1
