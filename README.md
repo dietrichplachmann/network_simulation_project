@@ -1,10 +1,6 @@
 # Analyzing Mesh Multi-Hop Network Performance
 
-Dietrich Lachmann and Yang Han. This starter project focuses on the gateway bottleneck experiment: every non-gateway node in a stationary square grid sends constant-rate UDP traffic to a single gateway at the center or at node 0 in a corner. Grid size and per-source offered load are configurable. OLSR supplies multi-hop IP routes.
-
-The model uses one shared 802.11a channel at a fixed 6 Mbps PHY rate, Wi-Fi ad hoc MACs, and an idealized radio range cutoff. Default spacing is 100 meters and range is 110 meters, so only horizontal and vertical neighbors can communicate directly. Increasing grid size therefore adds sources and increases path lengths. The gateway terminates traffic; there is no separate Internet uplink in this baseline. This studies contention around a shared wireless gateway, with bottlenecks also possible elsewhere along paths.
-
-This is an IP-routed wireless multi-hop network. The separate ns-3 `mesh` module implements 802.11s and HWMP; mixing that routing layer with the proposed AODV, OLSR, and DSDV comparison would change the experiment. The current baseline holds routing fixed at OLSR so gateway placement can be compared. The range cutoff creates a controlled topology; claims about real deployments require a more realistic propagation model and additional validation.
+Dietrich Lachmann and Yang Han.
 
 ## Use Visual Studio 2022
 
