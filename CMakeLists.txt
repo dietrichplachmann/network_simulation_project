@@ -44,3 +44,9 @@ if(BUILD_TESTING)
         "$<TARGET_FILE:gateway-bottleneck>" "${CMAKE_CURRENT_BINARY_DIR}/test-results")
     set_tests_properties(gateway-study-runner PROPERTIES TIMEOUT 180)
 endif()
+
+# add the hop-count file to make it executable
+add_executable(hop-count src/hop-count.cc)
+target_link_libraries(hop-count PRIVATE
+    ns3::core ns3::network ns3::internet ns3::mobility ns3::wifi
+    ns3::applications ns3::olsr)

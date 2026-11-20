@@ -1,10 +1,14 @@
 # Analyzing Mesh Multi-Hop Network Performance
 
+<<<<<<< HEAD
 Dietrich Lachmann and Yang Han. This ns-3.45 project studies traffic traveling through a wireless mesh to a gateway and then over a finite-capacity wired connection to an external server. The requested study contains **162 simulations**: grids from **2×2 through 10×10**, **center and corner** gateway placements, **AODV, OLSR, and DSDV**, and **three independent runs of every combination**.
 
 Each grid has n² mesh nodes, including one gateway, and n²−1 UDP sources. The external server adds one more node. The gateway has Wi-Fi and wired interfaces and forwards IP packets to the server. The selected routing protocol runs on the mesh and external server, learning the wired server route through normal protocol messages. This is a controlled upstream-server model; routing control traffic can also use the wired link.
 
 The mesh uses stationary 802.11a ad hoc devices sharing a 6 Mbps channel. Default spacing is 100 m and radio cutoff is 110 m, producing horizontal and vertical neighbor links. Nodes forward one another's packets, and the grid supplies multiple possible routes. This is an IP-routed mesh topology; the ns-3 IEEE 802.11s/HWMP model is a separate implementation. The range cutoff is idealized, so results describe this controlled simulation rather than a calibrated physical deployment.
+=======
+Dietrich Lachmann and Yang Han.
+>>>>>>> f9c3b31cf2f3d8a3e3f0710a632a45f1fe06da2b
 
 The corner gateway is node 0. The center gateway uses row `n // 2`, column `n // 2`, with node IDs increasing across rows. Odd grids have an exact center node; even grids choose the lower-right of the four equally near nodes in the row-first drawing. For 2×2, that selected node is itself a corner, so the two placement cases are equivalent under rotation. They are retained as requested, with their actual positions recorded in `topology.csv`.
 
