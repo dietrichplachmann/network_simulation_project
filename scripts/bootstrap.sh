@@ -17,7 +17,7 @@ if [[ "$(git -C "$root/.deps/ns-3" rev-parse HEAD)" != "$revision" ]]; then
 fi
 cmake -S "$root/.deps/ns-3" -B "$root/.deps/ns-3-build" \
     -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$root/.deps/install" \
-    -DNS3_ENABLED_MODULES='core;network;internet;mobility;wifi;applications;olsr;flow-monitor' \
+    -DNS3_ENABLED_MODULES='core;network;internet;mobility;wifi;applications;olsr;aodv;dsdv;point-to-point;traffic-control;flow-monitor' \
     -DNS3_EXAMPLES=OFF -DNS3_TESTS=OFF -DNS3_PYTHON_BINDINGS=OFF \
     -DNS3_WARNINGS_AS_ERRORS=OFF -DNS3_PRECOMPILE_HEADERS=OFF
 cmake --build "$root/.deps/ns-3-build" --parallel "${JOBS:-2}"

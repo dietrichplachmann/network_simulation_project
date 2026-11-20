@@ -26,7 +26,8 @@ find_package(ns3 3.45 EXACT CONFIG REQUIRED)
 add_executable(gateway-bottleneck src/gateway-bottleneck.cc)
 target_link_libraries(gateway-bottleneck PRIVATE
     ns3::core ns3::network ns3::internet ns3::mobility ns3::wifi
-    ns3::applications ns3::olsr ns3::flow-monitor)
+    ns3::applications ns3::olsr ns3::aodv ns3::dsdv ns3::point-to-point
+    ns3::traffic-control ns3::flow-monitor)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(gateway-bottleneck PRIVATE -Wall -Wextra -Wpedantic)
 endif()
@@ -38,4 +39,8 @@ if(BUILD_TESTING)
         COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_baseline.py"
         "$<TARGET_FILE:gateway-bottleneck>" "${CMAKE_CURRENT_BINARY_DIR}/test-results")
     set_tests_properties(gateway-baseline PROPERTIES TIMEOUT 180)
+    add_test(NAME gateway-study-runner
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/check_study.py"
+        "$<TARGET_FILE:gateway-bottleneck>" "${CMAKE_CURRENT_BINARY_DIR}/test-results")
+    set_tests_properties(gateway-study-runner PROPERTIES TIMEOUT 180)
 endif()
