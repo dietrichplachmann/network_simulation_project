@@ -1,93 +1,107 @@
 # Analyzing Mesh Multi-Hop Network Performance
 
-Dietrich Lachmann and Yang Han. This starter project focuses on the gateway bottleneck experiment: every non-gateway node in a stationary square grid sends constant-rate UDP traffic to a single gateway at the center or at node 0 in a corner. Grid size and per-source offered load are configurable. OLSR supplies multi-hop IP routes.
+Dietrich Lachmann and Yang Han. This ns-3.45 project studies traffic traveling through a wireless mesh to a gateway and then over a finite-capacity wired connection to an external server. The requested study contains **162 simulations**: grids from **2×2 through 10×10**, **center and corner** gateway placements, **AODV, OLSR, and DSDV**, and **three independent runs of every combination**.
 
-The model uses one shared 802.11a channel at a fixed 6 Mbps PHY rate, Wi-Fi ad hoc MACs, and an idealized radio range cutoff. Default spacing is 100 meters and range is 110 meters, so only horizontal and vertical neighbors can communicate directly. Increasing grid size therefore adds sources and increases path lengths. The gateway terminates traffic; there is no separate Internet uplink in this baseline. This studies contention around a shared wireless gateway, with bottlenecks also possible elsewhere along paths.
+Each grid has n² mesh nodes, including one gateway, and n²−1 UDP sources. The external server adds one more node. The gateway has Wi-Fi and wired interfaces and forwards IP packets to the server. The selected routing protocol runs on the mesh and external server, learning the wired server route through normal protocol messages. This is a controlled upstream-server model; routing control traffic can also use the wired link.
 
-This is an IP-routed wireless multi-hop network. The separate ns-3 `mesh` module implements 802.11s and HWMP; mixing that routing layer with the proposed AODV, OLSR, and DSDV comparison would change the experiment. The current baseline holds routing fixed at OLSR so gateway placement can be compared. The range cutoff creates a controlled topology; claims about real deployments require a more realistic propagation model and additional validation.
+The mesh uses stationary 802.11a ad hoc devices sharing a 6 Mbps channel. Default spacing is 100 m and radio cutoff is 110 m, producing horizontal and vertical neighbor links. Nodes forward one another's packets, and the grid supplies multiple possible routes. This is an IP-routed mesh topology; the ns-3 IEEE 802.11s/HWMP model is a separate implementation. The range cutoff is idealized, so results describe this controlled simulation rather than a calibrated physical deployment.
 
-## Use Visual Studio 2022
+The corner gateway is node 0. The center gateway uses row `n // 2`, column `n // 2`, with node IDs increasing across rows. Odd grids have an exact center node; even grids choose the lower-right of the four equally near nodes in the row-first drawing. For 2×2, that selected node is itself a corner, so the two placement cases are equivalent under rotation. They are retained as requested, with their actual positions recorded in `topology.csv`.
 
-Open this folder using **File > Open > Folder** in Visual Studio 2022. It opens directly as a CMake project. In Visual Studio Installer, the **Linux and embedded development with C++** workload provides WSL build and debugging support. If presets do not appear, enable **Tools > Options > CMake > General > Always use CMakePresets.json**, then reopen the folder.
+## Visual Studio 2022
 
-The repository includes `.vsconfig` declaring the Windows C++ and Linux C++ workloads. Accept Visual Studio's missing-components prompt, or open **Visual Studio Installer > Modify > Workloads**, select **Linux and embedded development with C++**, and apply the change. Having Ubuntu installed in WSL does not install Visual Studio's Linux integration. Both the Linux workload and its CMake component are required for the WSL build setup in the IDE.
+Open the repository using **File > Open > Folder**. Install **Linux and embedded development with C++** in Visual Studio Installer; `.vsconfig` declares the required workloads and Linux CMake component. Enable **Tools > Options > CMake > General > Always use CMakePresets.json** if necessary, then reopen the folder. Select **Ubuntu-18.04** or another installed Ubuntu target, followed by **wsl-debug** or **wsl-release**. Use **Build > Build All**, then select the gateway startup configuration and press F5. Ubuntu needs GDB for IDE debugging.
 
-Select an Ubuntu WSL target in the target-system dropdown, then select **WSL Debug** or **WSL Release**. Build the ns-3 dependency once using the instructions below before configuring the project. Select **gateway-bottleneck** as the startup target and use **Build > Build All**, then **Debug > Start Without Debugging** or F5. GDB must be installed in Ubuntu for F5 debugging (`sudo apt-get install -y gdb`). Editing, IntelliSense, builds, and debugging stay in Visual Studio; its WSL integration runs the Linux tools. See [Microsoft's Visual Studio CMake presets guide](https://learn.microsoft.com/en-us/cpp/build/cmake-presets-vs?view=msvc-170).
+The shared presets use `scripts/cmake` and `scripts/ctest`, which select the newer workspace toolchain when it exists and otherwise use system tools. On the original development machine, that toolchain is in the repository's sibling `.deps/toolchain` directory. A private `CMakeUserPresets.json` also supplies **WSL Local Debug (existing Ubuntu 18.04)**. That machine-specific file is ignored by Git. Teammates should use a current Linux toolchain and the shared presets.
 
-This workspace also has a private `CMakeUserPresets.json` named **WSL Local Debug (existing Ubuntu 18.04)**. It selects the isolated newer compiler and CMake downloaded for this machine, so you can use the existing **Ubuntu-18.04** target. This machine-specific preset is ignored by Git. The shared WSL presets use the normal compiler on a newer Ubuntu installation. The presets use Visual Studio's mounted-drive WSL toolset to share the same `.deps` installation and project files without copying the dependency tree.
+An error saying the startup target cannot be found can result from unsuccessful CMake configuration. Check **Output > CMake**, run **Project > Configure Cache**, and then build. A Windows **Local Machine / x64 Debug** configuration cannot use the Linux ns-3 libraries. See [Microsoft's Visual Studio CMake guide](https://learn.microsoft.com/en-us/cpp/build/cmake-presets-vs?view=msvc-170).
 
-The shared presets invoke `scripts/cmake`, which also detects the newer workspace toolchain when it is present. The companion `scripts/ctest` supplies Visual Studio's test discovery tool. This lets **WSL Debug** work on this machine as well. A missing startup target usually means CMake configuration has not succeeded yet; check **Output > CMake** before changing the executable name in `launch.vs.json`.
+The saved center and corner launch profiles are in `docs/launch.vs.json`; copy that file to `.vs/launch.vs.json` on a new machine. Keep any exact `projectTarget` spelling generated by Visual Studio if it differs. Results from those profiles are under `out/build/<preset>/results`. Choose a fresh output directory before repeating a run, because existing results are protected.
 
-If the toolbar shows **Local Machine / x64 Debug**, Visual Studio has selected a Windows build. Enable **Tools > Options > CMake > General > Always use CMakePresets.json**, close and reopen the folder, then select **Ubuntu-18.04** and **WSL Local Debug (existing Ubuntu 18.04)**. The Linux ns-3 installation contains `/mnt/c/...` include and library paths, which cause cascading errors when imported by a Windows build. Keep Windows and WSL builds in separate output folders; the provided presets already do this. CMake now stops early with a setup message if a Windows build is selected.
+## Build and dependencies
 
-For saved center and corner launch configurations, copy `docs/launch.vs.json` to `.vs/launch.vs.json`. A copy is already prepared in this workspace. The two entries appear in the startup dropdown after CMake configures. If your Visual Studio version displays a longer target name, generate a configuration via **Debug > Debug and Launch Settings** and retain its generated `projectTarget` value while copying the desired `args` from the example. Results from these launch profiles appear under the active preset's `out/build/<preset>/results` directory. Change the output name before repeating a saved run.
-
-## Build the dependency on Windows using Ubuntu in WSL
-
-Use Ubuntu 24.04 in WSL, or a Linux system with GCC 10.1 or newer, Python 3.8 or newer, CMake 3.20 or newer, Git, and Make. GCC 13 on Ubuntu 24.04 is the intended build environment. This project uses C++20 and pins ns-3.45 for reproducibility. Your currently installed Ubuntu 18.04 environment has GCC 7.5 and needs a newer toolchain. If needed, run this in an Administrator PowerShell terminal to install an additional Ubuntu distribution:
-
-```powershell
-wsl --install -d Ubuntu-24.04
-wsl -d Ubuntu-24.04
-```
-
-In the Ubuntu terminal, install prerequisites, enter the project folder, and build:
+Ubuntu 24.04 with GCC 13 is the intended clean setup. The simulator requires C++20, CMake 3.20 or newer, Make, Git, and Python 3.8 or newer for the build checks. Plot generation requires Python 3.10 or newer and `requirements.txt`. Run these commands inside Ubuntu/WSL from the repository root:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential cmake git python3
-cd /mnt/c/Users/dietr/source/repos/network_simulation_project
+sudo apt-get install -y build-essential cmake git python3 python3-venv gdb
 bash scripts/bootstrap.sh
 ctest --test-dir build --output-on-failure
+python3 -m venv .deps/report-env
+.deps/report-env/bin/python -m pip install -r requirements.txt
 ```
 
-The first build downloads and builds ns-3 inside `.deps`, then builds `build/gateway-bottleneck`. Dependencies and generated results are ignored by Git. No system-wide ns-3 installation is made. The downloaded release is checked against commit `4059af204636298c061df368e241941fa3ff97bf`. Adjust `JOBS` to control build parallelism, for example `JOBS=4 bash scripts/bootstrap.sh`. On Linux you can also clone this repository into your home directory and use the same commands from its root.
+The bootstrap script downloads the pinned ns-3.45 revision `4059af204636298c061df368e241941fa3ff97bf`, builds the required modules, and installs them inside `.deps/install`. It includes AODV, OLSR, DSDV, point-to-point, Wi-Fi, applications, and measurement dependencies. Rerun bootstrap after upgrading from the earlier OLSR-only project. It uses two compiler jobs by default; `JOBS=4 bash scripts/bootstrap.sh` changes that. ns-3 is not installed system-wide. Generated builds, dependencies, and results are ignored by Git.
 
-If ns-3.45 is already installed, configure against that installation directly:
+On the original Ubuntu 18.04 workspace, use the already installed reporting interpreter instead of creating a Python 3.6 virtual environment:
 
 ```bash
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/path/to/ns3/install
-cmake --build build --parallel 2
+../.deps/toolchain/bin/python3 scripts/run_sweep.py --output results/gateway-study
 ```
 
-After editing the simulation, rebuild with `cmake --build build --parallel 2`.
+If rebuilding ns-3 from scratch on that older Ubuntu, activate the newer compiler environment first. The existing build cache already selects the workspace compiler. Fresh teammate setups should use current Ubuntu rather than the old system GCC 7.5 compiler.
 
-## Run the gateway experiment
+If ns-3.45 is already installed elsewhere, configure with `cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/ns3/install`, then `cmake --build build --parallel 2`. After normal source changes, rebuilding the project is sufficient.
 
-Run the baseline and a matched corner case from the project root:
+## Run the full study
+
+From the repository root in Ubuntu, run the batch with the reporting Python interpreter:
 
 ```bash
-./build/gateway-bottleneck --gridSize=3 --gateway=center --output=results/3x3-center
-./build/gateway-bottleneck --gridSize=3 --gateway=corner --output=results/3x3-corner
+.deps/report-env/bin/python scripts/run_sweep.py --output results/gateway-study
 ```
 
-Run a larger grid or change the offered load:
+The default study runs 162 experiments using two worker processes. Each experiment has 60 s of routing warmup, 60 s of offered traffic, and 15 s of draining. Every source offers 128 decimal kbps of 1024-byte UDP payloads. The wired link has capacity 1 Mbps, one-way propagation delay 5 ms, and a 100-packet DropTail egress queue. Wi-Fi MAC queues also have a 100-packet capacity. Occupancy is measured from queue-change events and exported as time-weighted means every second, rather than occasional queue snapshots.
+
+Sources use independently seeded starting phases within one packet interval, capped at one second, to avoid a simultaneous startup collision burst. The same seed and run number are reused across matched protocol/placement cases; the run number changes between repetitions. Protocols retain their ns-3 defaults. AODV discovers data routes on demand even after warmup. The chosen warmup is recorded, and startup/convergence effects are part of the observed results; steady-state comparisons should check sensitivity to that interval.
+
+To continue the same interrupted study, rerun the command with `--resume`. The runner checks a manifest containing the parameters and simulator binary SHA-256 and skips completed experiments. Changing settings or rebuilding the binary requires a new output root. Completed run directories are created atomically after successful simulation and reporting; diagnostic staging folders are retained when a case fails. `combined-summary.csv` and `progress.json` update as runs finish.
+
+For a short trial that exercises every protocol and both placements:
 
 ```bash
-./build/gateway-bottleneck --gridSize=5 --gateway=center --rateKbps=256 --run=2 --output=results/5x5-center-run2
+.deps/report-env/bin/python scripts/run_sweep.py --sizes 2 3 --runs 1 --duration 5 --output results/trial
+```
+
+The sweep supports `--workers`, `--protocols`, `--runs`, `--duration`, `--warmup`, `--drain`, `--rate-kbps`, `--uplink-mbps`, `--uplink-delay-ms`, `--uplink-queue-packets`, `--wifi-queue-packets`, and `--sample-interval`. Use `--no-reports` to collect raw data only. If building through a Visual Studio preset, supply `--binary out/build/wsl-debug/gateway-bottleneck` or the corresponding release path. See `--help` for all options.
+
+To run a single configurable case:
+
+```bash
+./build/gateway-bottleneck --gridSize=6 --gateway=center --routing=AODV --run=2 --uplinkMbps=1 --output=results/single-case
 ./build/gateway-bottleneck --PrintHelp
 ```
 
-Center placement requires an odd grid size so there is one exact center node. Node IDs increase across rows. The default is a 3 by 3 grid with 8 sources, 1024-byte UDP payloads at 128 kbps per source, 30 seconds of routing warmup, 60 seconds of traffic, and 10 seconds to drain queued packets. All sources start together after warmup. These startup choices are part of the model; confirm convergence and inspect startup effects before drawing conclusions for larger grids. Use a fresh output directory for each run; existing result CSVs are protected against overwriting.
+## Figures, data, and animation
 
-For a repeatable center/corner sweep over 3 by 3, 5 by 5, and 7 by 7 grids, with five runs of each case:
+Open `results/gateway-study/index.html` in a browser after completion. It links every run's charts, raw data, and animation. Each experiment gets a folder such as `n06_center_AODV_run02`. Its `report.html` presents the figures and configuration, and its `animation.html` is a self-contained playback page that works directly from disk without a server or internet connection. It has play/pause, scrubbing, speed selection, and Wi-Fi queue or IP-forwarding heatmap modes. The gateway's wired queue, queue drops, external-server throughput, and delay update with the measured intervals. Link lines show possible radio neighbors, rather than claimed packet trajectories.
+
+Each run's `figures` folder contains PNG and SVG versions of the traffic/bottleneck time series and per-source throughput/spatial queue charts. `comparisons` contains center and corner figures comparing all protocols across n=2 through n=10, a direct center-versus-corner placement comparison for each protocol, and `group-summary.csv`. Comparison curves show the mean across runs, with error bars of one sample standard deviation. These error bars are not confidence intervals; three runs provide a limited estimate of variation.
+
+`summary.csv` records the configuration and run metrics. `per-source.csv` includes every source, including those with zero delivery. `topology.csv` identifies mesh nodes, the gateway, and the additional server. `timeseries.csv` contains interval traffic, queue, delay, and drop measurements. `node-timeseries.csv` contains each mesh node's time-weighted Wi-Fi MAC queue occupancy, queue drops, IP forwarding load, and source delivery. `simulation.log` and `experiment.json` retain execution details. `manifest.json` at the study root records the batch configuration and binary hash.
+
+To regenerate figures and animations from existing CSVs without rerunning ns-3:
 
 ```bash
-python3 scripts/run_sweep.py --sizes 3 5 7 --runs 5 --output results/sweep-128kbps
+.deps/report-env/bin/python scripts/report_results.py results/gateway-study --study --workers 2
 ```
 
-The sweep writes one result directory per case and a `combined-summary.csv` containing all runs. To explore saturation, repeat with different `--rate-kbps` values and fresh output roots. Keep spacing, radio settings, traffic, and routing parameters fixed when comparing placement. Constant per-source load means aggregate offered traffic increases with the number of sources; a separate experiment holding aggregate offered load fixed helps distinguish load growth from topology effects. Treat each simulation run as an experimental replicate and report variation or confidence intervals across runs. A bottleneck is a hypothesis to evaluate; the setup does not assume that the gateway must be the limiting resource.
+Pass a single experiment directory without `--study` to regenerate only that run's report. Add `--pcap=1` or `--flowXml=1` to the simulator for optional Wi-Fi/wired captures or IP FlowMonitor XML.
 
-## Read the results
+Audit the completed study with `.deps/report-env/bin/python scripts/validate_study.py results/gateway-study`. This verifies matrix coverage, per-source/aggregate accounting, queue time integrals, complete time windows, and all expected figure/animation files. Add `--partial` to audit completed runs while others are still running.
 
-`summary.csv` contains the configuration, aggregate gateway throughput, weighted mean delay, delivery and loss ratios, and Jain fairness. `per-source.csv` includes every source, including sources with zero delivery. `topology.csv` records node positions, IP addresses, and the gateway flag. The sweep combines summaries for subsequent plotting in a spreadsheet or analysis tool.
+## Measurement interpretation
 
-Throughput is received UDP payload bits during the active traffic interval divided by that interval, reported in decimal Mbps. Payload byte counts include the 12-byte sequence/timestamp header and exclude UDP, IP, and Wi-Fi headers. Packets arriving during the drain interval count toward delivery and delay but do not increase active-interval throughput. The offered `rateKbps` uses the same UDP payload size; packets are sent at fixed intervals, so finite windows can differ slightly from the nominal rate. This throughput measures application delivery at the gateway, rather than the configured radio link rate.
+Throughput is UDP payload bits received at the external server during the active traffic interval, divided by that interval. Payload includes the 12-byte sequence/timestamp header and excludes UDP, IP, Wi-Fi, and wire framing. The retained column name `gateway_throughput_mbps` therefore means gateway-to-external-server delivered goodput. Drain-period deliveries count toward delivery and delay but do not increase active throughput. The gateway-forwarding time series includes IP bytes; wire transmission includes framing and routing packets. Plot legends identify these different byte layers, so a 1 Mbps wire cannot deliver a full 1 Mbps of application payload.
 
-Delivery ratio is packets received through the end of draining divided by application send attempts. The undelivered count is attempts minus receptions, and loss ratio is one minus delivery ratio. Undelivered packets can include packets still queued at simulation termination; increase `--drain` and check whether results change before interpreting that count as permanent packet loss. End-to-end delay is measured from the source timestamp to gateway reception and is averaged over delivered packets. A blank delay means no packets arrived. Jain fairness is `(sum of source throughputs)^2 / (source count * sum of squared source throughputs)`, includes zero-throughput sources, and is blank when every source has zero throughput.
+Delivery ratio is packets reaching the external server through the end of draining divided by application send attempts. Undelivered packets are attempts minus receptions; this includes any packets still buffered at termination, so assess sensitivity to `--drain` before interpreting all of them as permanent loss. Mean delay runs from source timestamp to server reception and includes route discovery, mesh forwarding, queues, serialization, and wire propagation. Blank delay means no packets were delivered. Jain fairness uses active server-delivered throughput from all sources, including zero-throughput sources; it is blank when all sources have zero throughput.
 
-Add `--pcap=1` for per-device Wi-Fi packet captures or `--flowXml=1` for optional IP-level FlowMonitor output. FlowMonitor uses different byte accounting and loss semantics from the application CSVs. Routing overhead, MAC retransmissions, route recovery, and observed hop counts are future measurements; the current CSVs cover the gateway portion of the proposal.
+Queue means and external-link utilization in the summary cover the active traffic interval. Queue drop totals cover traffic and drain after warmup. The wired metric is actual gateway egress queue occupancy, with flow control disabled and no root queue discipline hiding an additional backlog. Its utilization counts serialization time of all outgoing wire packets. Wi-Fi heatmaps measure MAC queues, whose default ns-3 queue lifetime remains 500 ms. Protocol route-discovery buffers, packets currently being transmitted, and any upstream traffic-control queues are outside the displayed MAC occupancy. Queue-drop events include data and routing packets and are distinct from end-to-end application losses.
 
-The CTest check exercises low-load delivery from every source for both gateway placements, including a four-hop corner path, checks CSV accounting, verifies a disconnected topology reports zero delivery, and checks input and overwrite protection. GitHub Actions builds and runs these checks on Ubuntu 24.04 after the project is pushed.
+A persistent wired backlog, high wire utilization, and wired queue drops provide evidence of external-link congestion. Low end-to-end delivery with an underutilized wire instead calls for examining wireless contention, routing, queue expiry, and source fairness. Increasing n increases both aggregate offered traffic and path lengths: offered UDP load is `(n²−1) × rateKbps`. A separate fixed-aggregate-load study can distinguish traffic growth from geometry effects. The animations replay observations and do not assert that every loss was caused at the gateway.
 
-The official [ns-3 CMake manual](https://www.nsnam.org/docs/release/3.45/manual/html/working-with-cmake.html), [installation guide](https://www.nsnam.org/docs/release/3.45/installation/html/index.html), and [FlowMonitor documentation](https://www.nsnam.org/docs/release/3.45/models/html/flow-monitor.html) describe the underlying build and measurement tools.
+## Verification
+
+CTest checks low-load external-server delivery for AODV, OLSR, and DSDV, including a source at least four wireless hops from the gateway followed by the wired hop. It checks even-grid center selection, source/aggregate accounting, complete interval coverage, disconnected delivery, bounded queues, and an intentionally slow 50 kbps uplink that must saturate and drop packets. A separate batch test checks protocol/placement coverage, complete per-experiment folders, safe resume, and parameter-mismatch/overwrite protection. GitHub Actions builds these tests on Ubuntu 24.04 and exercises chart and animation generation on a small study.
+
+The official [ns-3 CMake manual](https://www.nsnam.org/docs/release/3.45/manual/html/working-with-cmake.html), [AODV model documentation](https://www.nsnam.org/docs/release/3.45/models/html/aodv.html), and [FlowMonitor documentation](https://www.nsnam.org/docs/release/3.45/models/html/flow-monitor.html) describe the underlying tools.
